@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Running Coach Agent — Work Sample</title>
+<style>
+  :root{
+    --bg:#0f1117;
+    --panel:#171a22;
+    --panel-2:#1d2029;
+    --border:#282c36;
+    --text:#e6e8ec;
+    --muted:#9aa0ac;
+    --accent:#4f7cff;
+    --accent-soft:#2a3a66;
+    --green:#39d98a;
+    --yellow:#f5c451;
+    --red:#f2685f;
+    --code-bg:#12141b;
+    --mono:'SF Mono',ui-monospace,'JetBrains Mono',Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);
+    line-height:1.5;padding:40px 24px;
+  }
+  .wrap{max-width:960px;margin:0 auto;}
+  header.top{margin-bottom:8px;}
+  .kicker{color:var(--accent);font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;}
+  h1{font-size:30px;margin:6px 0 6px;letter-spacing:-.01em;}
+  .sub{color:var(--muted);font-size:15px;max-width:640px;}
+  .stack{margin-top:28px;display:flex;flex-direction:column;gap:24px;}
+  .card{
+    background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden;
+  }
+  .card-head{
+    display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);
+    background:var(--panel-2);
+  }
+  .badge{
+    font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    padding:4px 9px;border-radius:6px;background:var(--accent-soft);color:#a9c0ff;
+  }
+  .card-head h2{font-size:15px;margin:0;font-weight:600;}
+  .card-head .meta{margin-left:auto;color:var(--muted);font-size:12px;font-family:var(--mono);}
+  .card-body{padding:0;}
+
+  /* code block */
+  pre{
+    margin:0;padding:18px 20px;background:var(--code-bg);overflow-x:auto;
+    font-family:var(--mono);font-size:12.5px;line-height:1.65;
+  }
+  .c-com{color:#6b7280;}
+  .c-kw{color:#c586f0;}
+  .c-fn{color:#63b3ff;}
+  .c-str{color:#8fd98f;}
+  .c-num{color:#f5c451;}
+  .c-var{color:#e6e8ec;}
+  .c-dec{color:#f2a25f;}
+
+  /* briefing mockup */
+  .brief{padding:20px;}
+  .brief-window{
+    background:#fbfbfd;border:1px solid #e3e5ea;border-radius:10px;color:#1a1c22;
+    font-family:var(--sans);overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.35);
+  }
+  .brief-bar{
+    display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #e8eaef;background:#f3f4f7;
+  }
+  .dot{width:11px;height:11px;border-radius:50%;}
+  .dot.r{background:#ff5f57;}.dot.y{background:#febc2e;}.dot.g{background:#28c840;}
+  .brief-subj{margin-left:8px;font-size:12.5px;color:#4a4d57;font-weight:600;}
+  .brief-inner{padding:20px 22px;}
+  .brief-from{font-size:12px;color:#7a7d88;margin-bottom:14px;}
+  .brief-from b{color:#2b2e38;}
+  .brief-h{font-size:19px;margin:0 0 4px;color:#14161c;}
+  .pill{
+    display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;
+    text-transform:uppercase;letter-spacing:.04em;margin:6px 0 16px;
+  }
+  .pill.green{background:#e2f7ec;color:#0e8a52;}
+  .brief-p{font-size:13.5px;color:#33363f;margin:0 0 14px;}
+  .metrics{display:flex;gap:10px;margin:0 0 18px;flex-wrap:wrap;}
+  .metric{flex:1;min-width:120px;background:#f5f6f9;border:1px solid #e8eaef;border-radius:8px;padding:11px 13px;}
+  .metric .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#8a8d98;font-weight:600;}
+  .metric .val{font-size:20px;font-weight:700;color:#16181e;margin-top:3px;}
+  .metric .val small{font-size:12px;font-weight:500;color:#8a8d98;}
+  .session{background:#f0f4ff;border:1px solid #dce6ff;border-radius:8px;padding:14px 16px;}
+  .session h4{margin:0 0 8px;font-size:13px;color:#2b4bab;text-transform:uppercase;letter-spacing:.04em;}
+  .session ul{margin:0;padding-left:18px;font-size:13px;color:#33363f;}
+  .session li{margin-bottom:4px;}
+  .brief-foot{font-size:11.5px;color:#9497a1;margin-top:16px;border-top:1px solid #eceef2;padding-top:12px;}
+
+  /* schedule payload */
+  .sched{display:grid;grid-template-columns:1.1fr 1fr;gap:0;}
+  .sched .col{padding:18px 20px;}
+  .sched .col:first-child{border-right:1px solid var(--border);}
+  .sched h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 12px;font-weight:600;}
+  .flow{display:flex;flex-direction:column;gap:0;}
+  .step{display:flex;gap:12px;position:relative;padding-bottom:16px;}
+  .step:last-child{padding-bottom:0;}
+  .step .rail{display:flex;flex-direction:column;align-items:center;}
+  .step .node{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);border:1px solid var(--accent);
+    display:flex;align-items:center;justify-content:center;font-size:11px;color:#a9c0ff;font-weight:700;flex-shrink:0;}
+  .step .line{width:1px;flex:1;background:var(--border);margin:3px 0;}
+  .step:last-child .line{display:none;}
+  .step .txt{padding-top:1px;}
+  .step .txt .t{font-size:13px;font-weight:600;}
+  .step .txt .d{font-size:12px;color:var(--muted);margin-top:2px;}
+  .payload pre{background:transparent;padding:0;font-size:11.5px;line-height:1.6;}
+  .j-key{color:#63b3ff;}.j-str{color:#8fd98f;}.j-bool{color:#f2a25f;}.j-num{color:#f5c451;}.j-pun{color:#8a8d98;}
+
+  footer.foot{margin-top:32px;color:#5c6270;font-size:12px;text-align:center;}
+  .stackrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+  .tag{font-size:11px;font-family:var(--mono);color:var(--muted);background:var(--panel-2);
+    border:1px solid var(--border);border-radius:6px;padding:4px 9px;}
+  @media(max-width:680px){.sched{grid-template-columns:1fr;}.sched .col:first-child{border-right:none;border-bottom:1px solid var(--border);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">Personal Project · Work Sample</div>
+    <h1>Recovery-Driven Running Coach Agent</h1>
+    <p class="sub">An autonomous coaching agent that pulls live WHOOP recovery and Strava activity data through MCP, decides the day's training load, generates a coaching briefing, and schedules follow-up reminders. Built with an agentic workflow (Claude Code).</p>
+    <div class="stackrow">
+      <span class="tag">Python</span>
+      <span class="tag">MCP</span>
+      <span class="tag">WHOOP API</span>
+      <span class="tag">Strava API</span>
+      <span class="tag">ISO-8601 scheduling</span>
+    </div>
+  </header>
+
+  <div class="stack">
+
+    <!-- 1. CODE SNIPPET -->
+    <div class="card">
+      <div class="card-head">
+        <span class="badge">Code</span>
+        <h2>Recovery-based load decision engine</h2>
+        <span class="meta">coach/load_engine.py</span>
+      </div>
+      <div class="card-body">
+<pre><span class="c-com"># Maps WHOOP recovery score to a training-load decision.</span>
+<span class="c-com"># Green (67+): full session · Yellow (34–66): reduced · Red (&lt;=33): recovery</span>
+
+<span class="c-kw">from</span> dataclasses <span class="c-kw">import</span> dataclass
+
+<span class="c-dec">@dataclass</span>
+<span class="c-kw">class</span> <span class="c-fn">LoadDecision</span>:
+    zone: str
+    volume_pct: float
+    message: str
+
+<span class="c-kw">def</span> <span class="c-fn">decide_load</span>(recovery: <span class="c-var">int</span>, planned_session: <span class="c-var">dict</span>) -> <span class="c-fn">LoadDecision</span>:
+    <span class="c-str">"""Translate today's WHOOP recovery into an adjusted session."""</span>
+    <span class="c-kw">if</span> recovery &gt;= <span class="c-num">67</span>:
+        <span class="c-kw">return</span> <span class="c-fn">LoadDecision</span>(<span class="c-str">"green"</span>, <span class="c-num">1.0</span>,
+            <span class="c-str">f"Recovery {recovery}. Full send: {planned_session['name']}."</span>)
+    <span class="c-kw">elif</span> recovery &gt;= <span class="c-num">34</span>:
+        <span class="c-kw">return</span> <span class="c-fn">LoadDecision</span>(<span class="c-str">"yellow"</span>, <span class="c-num">0.7</span>,
+            <span class="c-str">f"Recovery {recovery}. Cap volume ~70%, hold intensity."</span>)
+    <span class="c-kw">return</span> <span class="c-fn">LoadDecision</span>(<span class="c-str">"red"</span>, <span class="c-num">0.0</span>,
+        <span class="c-str">f"Recovery {recovery}. Recovery day — mobility + walk only."</span>)
+
+<span class="c-kw">def</span> <span class="c-fn">build_today</span>(coach) -> <span class="c-var">dict</span>:
+    <span class="c-com"># Live pulls via MCP tools (fallback to cached on auth error)</span>
+    recovery = coach.<span class="c-fn">get_whoop_recovery</span>(days=<span class="c-num">1</span>)[<span class="c-num">0</span>][<span class="c-str">"score"</span>]
+    last     = coach.<span class="c-fn">list_activities</span>(first=<span class="c-num">1</span>)[<span class="c-num">0</span>]
+    planned  = coach.plan.<span class="c-fn">session_for</span>(coach.<span class="c-fn">today</span>())
+
+    decision = <span class="c-fn">decide_load</span>(recovery, planned)
+    <span class="c-kw">return</span> coach.<span class="c-fn">render_briefing</span>(decision, planned, last, recovery)</pre>
+      </div>
+    </div>
+
+    <!-- 2. GENERATED BRIEFING (email-style draft) -->
+    <div class="card">
+      <div class="card-head">
+        <span class="badge">Output</span>
+        <h2>Generated daily coaching briefing</h2>
+        <span class="meta">render_briefing() → draft</span>
+      </div>
+      <div class="card-body">
+        <div class="brief">
+          <div class="brief-window">
+            <div class="brief-bar">
+              <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+              <span class="brief-subj">Today's session — Recovery 67 (green), full send</span>
+            </div>
+            <div class="brief-inner">
+              <div class="brief-from"><b>Running Coach Agent</b> · Mon, Jul 6 · 6:45 AM</div>
+              <h3 class="brief-h">Day 1 · Week 1 — Heavy Strength &amp; Jerk</h3>
+              <span class="pill green">Green · Full Load</span>
+              <p class="brief-p">Recovery came in at <b>67</b>, so you're cleared for the full planned session. Last logged effort was a 16 km hike with ~950 m gain, legs should be ready. Sleep was your limiter this week, so prioritize it tonight.</p>
+              <div class="metrics">
+                <div class="metric"><div class="lbl">Recovery</div><div class="val">67 <small>green</small></div></div>
+                <div class="metric"><div class="lbl">Volume Target</div><div class="val">100<small>%</small></div></div>
+                <div class="metric"><div class="lbl">Last Activity</div><div class="val">16<small>km</small></div></div>
+              </div>
+              <div class="session">
+                <h4>Today's Session</h4>
+                <ul>
+                  <li>Power Snatch — build to a moderate single</li>
+                  <li>Split Jerk — technique focus, submaximal</li>
+                  <li>Front Squat — 3×3 @ working load</li>
+                  <li>Bent-Over Row · Weighted Back Extension</li>
+                  <li>Hanging Leg Raise + mobility finisher</li>
+                </ul>
+              </div>
+              <div class="brief-foot">Auto-generated from live WHOOP + Strava data. Yellow days cap volume at 70%; red days switch to recovery. Reply "swap" to shift the session.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. SCHEDULING & AUTOMATION -->
+    <div class="card">
+      <div class="card-head">
+        <span class="badge">Automation</span>
+        <h2>Task scheduling &amp; reminder automation</h2>
+        <span class="meta">scheduler → reminder_create</span>
+      </div>
+      <div class="card-body">
+        <div class="sched">
+          <div class="col">
+            <h3>Daily run loop</h3>
+            <div class="flow">
+              <div class="step">
+                <div class="rail"><div class="node">1</div><div class="line"></div></div>
+                <div class="txt"><div class="t">Trigger @ 06:30 PT</div><div class="d">Scheduled job wakes the agent each morning.</div></div>
+              </div>
+              <div class="step">
+                <div class="rail"><div class="node">2</div><div class="line"></div></div>
+                <div class="txt"><div class="t">Pull live data</div><div class="d">WHOOP recovery + latest Strava activity via MCP. Retry / re-auth on token error.</div></div>
+              </div>
+              <div class="step">
+                <div class="rail"><div class="node">3</div><div class="line"></div></div>
+                <div class="txt"><div class="t">Decide &amp; render</div><div class="d">Load engine picks the zone, briefing is generated.</div></div>
+              </div>
+              <div class="step">
+                <div class="rail"><div class="node">4</div><div class="line"></div></div>
+                <div class="txt"><div class="t">Schedule reminder</div><div class="d">Writes an ISO-8601 reminder for the session with context in the notes.</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="col payload">
+            <h3>Reminder payload</h3>
+<pre><span class="j-pun">{</span>
+  <span class="j-key">"title"</span><span class="j-pun">:</span> <span class="j-str">"Day 1 — Heavy Strength &amp; Jerk"</span><span class="j-pun">,</span>
+  <span class="j-key">"notes"</span><span class="j-pun">:</span> <span class="j-str">"Recovery 67 (green). Full load.</span>
+<span class="j-str">           Power snatch, split jerk,</span>
+<span class="j-str">           front squat 3x3. Sleep = limiter."</span><span class="j-pun">,</span>
+  <span class="j-key">"dueDate"</span><span class="j-pun">:</span> <span class="j-str">"2026-07-06T09:00:00-07:00"</span><span class="j-pun">,</span>
+  <span class="j-key">"dueDateIncludesTime"</span><span class="j-pun">:</span> <span class="j-bool">true</span><span class="j-pun">,</span>
+  <span class="j-key">"alarms"</span><span class="j-pun">:</span> <span class="j-pun">[{</span>
+    <span class="j-key">"type"</span><span class="j-pun">:</span> <span class="j-str">"relative"</span><span class="j-pun">,</span>
+    <span class="j-key">"secondsBefore"</span><span class="j-pun">:</span> <span class="j-num">0</span>
+  <span class="j-pun">}]</span>
+<span class="j-pun">}</span></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="foot">Personal project · Data integrations: WHOOP &amp; Strava via MCP · Built with an agentic (Claude Code) workflow</footer>
+</div>
+</body>
+</html>
