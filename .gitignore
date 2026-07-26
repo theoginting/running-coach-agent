@@ -1,8 +1,22 @@
+# Secrets — never commit
 .env
+.env.*
+!.env.example
 .whoop_tokens.json
 .memory.json
+*.pem
+*.key
+
+# Logs (can contain the connector token in request paths)
+*.log
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
 .venv/
 venv/
+
+# Tooling
+.fly/
+.DS_Store
