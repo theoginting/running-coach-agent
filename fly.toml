@@ -1,32 +1,28 @@
-# Fly.io config for the running-coach MCP server.
-# Create the app with:  fly launch --no-deploy --copy-config
-# Then set secrets and deploy (see README).
+# fly.toml app configuration file generated for running-coach-mcp on 2026-07-25T19:56:51-07:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = "running-coach-mcp"
-primary_region = "sjc"
+app = 'running-coach-mcp'
+primary_region = 'sjc'
 
 [build]
-
 [env]
-  PORT = "8080"
-  # Persist rotated WHOOP tokens and memory on the mounted volume so they
-  # survive restarts and redeploys.
-  WHOOP_TOKENS_FILE = "/data/.whoop_tokens.json"
-  MEMORY_FILE = "/data/.memory.json"
+  MEMORY_FILE = '/data/.memory.json'
+  PORT = '8080'
+  WHOOP_TOKENS_FILE = '/data/.whoop_tokens.json'
+
+[[mounts]]
+  source = 'coach_data'
+  destination = '/data'
 
 [http_service]
   internal_port = 8080
   force_https = true
-  # The Claude app connects on demand, so the machine must stay running —
-  # a cold start would fail the connector handshake.
-  auto_stop_machines = false
+  auto_stop_machines = 'off'
   auto_start_machines = true
   min_machines_running = 1
 
-[mounts]
-  source = "coach_data"
-  destination = "/data"
-
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "256mb"
+  size = 'shared-cpu-1x'
+  memory = '256mb'
