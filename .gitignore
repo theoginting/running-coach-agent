@@ -1,5 +1,6 @@
 .env
-.tokens.json
+.whoop_tokens.json
+.memory.json
 __pycache__/
 *.pyc
 *.pyo

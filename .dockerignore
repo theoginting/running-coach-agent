@@ -1,0 +1,12 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+.whoop_tokens.json
+.memory.json
+.git/
+.gitignore
+README.md
+Procfile
