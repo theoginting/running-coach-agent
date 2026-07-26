@@ -47,7 +47,7 @@ https://<your-host>/<CONNECTOR_TOKEN>/mcp
 - A [WHOOP account](https://www.whoop.com) + developer app
 - A **Strava subscription** (for Strava's official connector)
 - The Claude app on a plan that supports custom connectors (Free = 1, Pro, Max, Team, Enterprise)
-- A way to expose this server over public HTTPS (Railway for production, ngrok for testing)
+- A way to expose this server over public HTTPS (Fly.io for production, ngrok for testing)
 
 ## Setup
 
@@ -147,28 +147,80 @@ https://<app-name>.fly.dev/<CONNECTOR_TOKEN>/mcp
 restarts and redeploys. `auto_stop_machines` is disabled so the connector never
 hits a cold start.
 
-### Production with Railway
+### Alternative: Railway
 
-1. Push to GitHub and create a Railway project from the repo.
-2. The `Procfile` runs `python server.py` as a **web** process. Railway injects `$PORT`.
-3. In Railway → **Variables**, set:
+A `Procfile` (`web: python server.py`) is included if you prefer Railway. Set the
+same environment variables there. Note that Railway's filesystem is ephemeral, so
+attach a volume and point `WHOOP_TOKENS_FILE` / `MEMORY_FILE` at it — otherwise
+rotated WHOOP tokens are lost on every redeploy.
 
-   | Variable | Value |
-   |---|---|
-   | `CONNECTOR_TOKEN` | your secret |
-   | `WHOOP_CLIENT_ID` / `WHOOP_CLIENT_SECRET` | from WHOOP |
-   | `WHOOP_ACCESS_TOKEN` / `WHOOP_REFRESH_TOKEN` / `WHOOP_TOKEN_EXPIRES_AT` | from local `.whoop_tokens.json` |
-   | `MEMORY_FILE` | optional: a path on a mounted volume (e.g. `/data/.memory.json`) |
+## Current deployment
 
-   Run `whoop_auth.py` locally first, then copy the token values.
-4. Add the connector in the Claude app using your Railway URL:
-   `https://<app>.up.railway.app/<CONNECTOR_TOKEN>/mcp`
+The live instance runs on Fly.io:
 
-> Railway's filesystem is ephemeral. WHOOP token refreshes and memory written at
-> runtime won't survive a redeploy unless you attach a volume and point
-> `MEMORY_FILE` at it. Tokens are re-read from env vars on restart.
+| Setting | Value |
+|---|---|
+| App | `running-coach-mcp` |
+| Host | `running-coach-mcp.fly.dev` |
+| Region | `sjc` (San Jose) |
+| Machine | `shared-cpu-1x`, 256 MB, always-on |
+| Volume | `coach_data`, 1 GB, mounted at `/data` |
+| Connector URL | `https://running-coach-mcp.fly.dev/<CONNECTOR_TOKEN>/mcp` |
+| Cost | ~$2/month (machine) + ~$0.15/month (volume) |
+
+Secrets are set with `fly secrets set` (never committed): `CONNECTOR_TOKEN`,
+`WHOOP_CLIENT_ID`, `WHOOP_CLIENT_SECRET`, `WHOOP_ACCESS_TOKEN`,
+`WHOOP_REFRESH_TOKEN`, `WHOOP_TOKEN_EXPIRES_AT`.
+
+## Operations
+
+```bash
+fly status                 # is the machine running?
+fly logs                   # live logs
+fly deploy                 # ship code changes
+fly secrets list           # names only, never values
+fly machine restart <id>   # bounce the app
+```
+
+Health check — a wrong path must 404 and the real path must return `serverInfo`:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+  https://running-coach-mcp.fly.dev/wrong/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"c","version":"1"}}}'
+```
+
+### Re-authenticating WHOOP
+
+If the refresh token is ever revoked or expires, re-run the local OAuth flow and
+push the new tokens up:
+
+```bash
+python whoop_auth.py       # writes .whoop_tokens.json
+fly secrets set \
+  WHOOP_ACCESS_TOKEN="..." WHOOP_REFRESH_TOKEN="..." WHOOP_TOKEN_EXPIRES_AT="..."
+```
+
+### Rotating the connector token
+
+Generate a new `CONNECTOR_TOKEN`, run `fly secrets set CONNECTOR_TOKEN="..."`,
+then update the connector URL in the Claude app — the path changes with the token.
+
+## Troubleshooting
+
+| Symptom | Cause / fix |
+|---|---|
+| Claude says WHOOP auth expired, refresh fails with **400** | WHOOP refresh tokens are **single-use and rotate on every refresh**. A stale in-memory or duplicated copy causes this. The client reloads tokens from disk before each refresh and locks around it; make sure `WHOOP_TOKENS_FILE` points at the persistent volume so rotations survive restarts. |
+| WHOOP calls return **404** | Using the retired **v1** API. All paths must be `/developer/v2/…`, with sleep and workout under `/activity`. |
+| `whoop_auth.py` fails or the browser errors | WHOOP requires a **`state` parameter (min 8 chars)** on the authorize request, and the app's redirect URI must be **exactly** `http://localhost:8283/callback`. |
+| Connector shows disconnected / "session terminated" | The server or tunnel is down. On Fly, check `fly status` and `fly logs`. Locally, ngrok and `server.py` must both be running. |
+| Strava tools return **403 `Application / Status / Inactive`** | Your personal Strava API app was deactivated. This project no longer calls the Strava API directly — use Strava's official MCP connector instead (needs a Strava subscription). |
+| Tools list looks stale in the Claude app | Reconnect the connector (toggle off/on, or remove and re-add) so it re-reads the tool list. |
 
 ## Security notes
 
 - Anyone with the full connector URL (host + token) can read your WHOOP data. Keep it secret; rotate `CONNECTOR_TOKEN` if it leaks.
+- Never commit `.env`, `.whoop_tokens.json`, or `.memory.json` — all are gitignored.
 - For stronger protection you can put the server behind OAuth 2.1 — not implemented here.
