@@ -10,6 +10,7 @@ primary_region = 'sjc'
 [env]
   MEMORY_FILE = '/data/.memory.json'
   PORT = '8080'
+  TRAINING_PLANS_FILE = '/data/.training_plans.json'
   WHOOP_TOKENS_FILE = '/data/.whoop_tokens.json'
 
 [[mounts]]

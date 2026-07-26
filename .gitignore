@@ -4,6 +4,7 @@
 !.env.example
 .whoop_tokens.json
 .memory.json
+.training_plans.json
 *.pem
 *.key
 

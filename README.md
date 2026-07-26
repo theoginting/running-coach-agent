@@ -38,8 +38,45 @@ https://<your-host>/<CONNECTOR_TOKEN>/mcp
 | `get_whoop_sleep` | Sleep stages, performance, efficiency |
 | `get_whoop_strain` | Daily strain, energy, heart rate |
 | `save_memory` / `list_memory` / `clear_memory` | Persist athlete facts across chats |
+| `save_training_plan` | Store a dated training block and make it active |
+| `get_training_plan` | Week-by-week overview, or every session in one week |
+| `get_todays_session` | Today's prescribed session plus its week for context |
+| `update_session` | Record how a session went, or how it was adapted |
+| `list_training_plans` / `set_active_plan` / `delete_training_plan` | Manage stored blocks |
 
 > WHOOP uses **API v2** (`/developer/v2/…`). The v1 API is no longer supported.
+
+## Training plans
+
+The server stores the plan; Claude does the reading, interviewing, and adapting.
+
+**Two ways to start a block:**
+
+1. **Bring an existing plan.** Upload or paste your training document in the Claude
+   app ("here's my 12-week block, load it"). Claude reads it, converts it into dated
+   sessions, confirms anything ambiguous (start date, units, race date), and saves it.
+2. **Get interviewed.** Ask Claude to build one ("I want to break 1:35 for a half in
+   October"). It asks about your goal and date, current volume, available days,
+   injury history and constraints — cross-checking your real Strava history rather
+   than relying on recall — then saves the block.
+
+**Daily use.** Ask "what should I run today?". Claude pulls the prescribed session,
+checks WHOOP recovery/sleep/strain and recent Strava load, and either confirms it or
+adjusts it — cutting intensity on a low-recovery day, or greenlighting the hard
+session when you're ready for it. Afterwards it records what you actually did with
+`update_session`.
+
+**Block-level adaptation.** When a pattern emerges over a week or two — repeatedly
+missed sessions, sustained low recovery, rising resting HR, or fitness running ahead
+of schedule — Claude explains the reasoning and saves a revised block. Previous plans
+are kept, so you can compare or roll back.
+
+Sessions keep the original prescription alongside `status` (`planned` / `completed` /
+`modified` / `skipped`), what was actually done, and why — so adaptation decisions are
+informed by real history, not just the current day's numbers.
+
+Weeks are counted from the plan's first session (week 1 = days 0–6), so a block that
+starts mid-week still numbers its weeks the way a written plan does.
 
 ## Prerequisites
 
